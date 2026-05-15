@@ -1,0 +1,2 @@
+// TODO: /activities router
+export {};
