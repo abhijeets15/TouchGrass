@@ -6,10 +6,19 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "paths": {
-      "@vibecheck/shared-types": ["./packages/shared-types/src"],
-      "@vibecheck/shared-utils": ["./packages/shared-utils/src"],
-      "@vibecheck/ui-kit": ["./packages/ui-kit/src"],
-      "@vibecheck/api-client": ["./packages/api-client/src"]
+      "@vibecheck/shared-types": [
+        "./packages/shared-types/src"
+      ],
+      "@vibecheck/shared-utils": [
+        "./packages/shared-utils/src"
+      ],
+      "@vibecheck/ui-kit": [
+        "./packages/ui-kit/src"
+      ],
+      "@vibecheck/api-client": [
+        "./packages/api-client/src"
+      ]
     }
-  }
+  },
+  "extends": "expo/tsconfig.base"
 }

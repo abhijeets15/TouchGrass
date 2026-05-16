@@ -18,9 +18,9 @@ import { Chip } from '../components/Chip';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useVibeStore } from '../store/vibeStore';
 import { useItinerary } from '../hooks/useItinerary';
-import type { RootStackParamList } from '../navigation';
+import type { MainStackParamList } from '../navigation/types';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Filters'>;
+type Nav = NativeStackNavigationProp<MainStackParamList, 'Filters'>;
 
 export function FiltersScreen() {
   const navigation = useNavigation<Nav>();

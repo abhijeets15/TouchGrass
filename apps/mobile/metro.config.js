@@ -11,5 +11,7 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(monorepoRoot, 'node_modules'),
 ];
+// Required for npm workspaces — avoids resolving the wrong package "main"
+config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;

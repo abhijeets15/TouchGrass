@@ -69,10 +69,20 @@ export interface ItineraryStop {
 
 export interface User {
   id: string;
+  email: string;
   displayName: string;
   preferences?: UserPreferences;
   createdAt: string;
 }
+
+export type {
+  AuthUser,
+  AuthTokens,
+  AuthResponse,
+  RegisterInput,
+  LoginInput,
+  ApiErrorBody,
+} from './auth';
 
 export interface UserPreferences {
   defaultRadius: number;

@@ -1,0 +1,13 @@
+export type AuthStackParamList = {
+  Welcome: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
+};
+
+export type MainStackParamList = {
+  VibePicker: undefined;
+  Filters: undefined;
+  Loading: undefined;
+  Itinerary: undefined;
+  Profile: undefined;
+};

@@ -12,10 +12,10 @@ import { colors, spacing, radius, typography } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useVibeStore } from '../store/vibeStore';
 import { useItinerary } from '../hooks/useItinerary';
-import type { RootStackParamList } from '../navigation';
+import type { MainStackParamList } from '../navigation/types';
 import type { ItineraryStop } from '../constants/types';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Itinerary'>;
+type Nav = NativeStackNavigationProp<MainStackParamList, 'Itinerary'>;
 
 const GROUP_EMOJI: Record<string, string> = {
   solo: '🧍',

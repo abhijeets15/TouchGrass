@@ -13,17 +13,26 @@ import { VIBES, type VibeId } from '../constants/vibes';
 import { colors, spacing, radius, typography } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useVibeStore } from '../store/vibeStore';
-import type { RootStackParamList } from '../navigation';
+import type { MainStackParamList } from '../navigation/types';
+import { useAuthStore } from '../store/authStore';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'VibePicker'>;
+type Nav = NativeStackNavigationProp<MainStackParamList, 'VibePicker'>;
 
 export function VibePickerScreen() {
   const navigation = useNavigation<Nav>();
   const { vibe, setVibe } = useVibeStore();
+  const user = useAuthStore((s) => s.user);
+  const isGuest = useAuthStore((s) => s.isGuest);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Pressable style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.profileLabel}>
+            {user ? user.displayName.split(' ')[0] : isGuest ? 'Guest' : 'Account'}
+          </Text>
+          <Text style={styles.profileIcon}>◎</Text>
+        </Pressable>
         <Text style={styles.eyebrow}>VIBECHECK</Text>
         <Text style={styles.heading}>What's the{'\n'}vibe tonight?</Text>
         <Text style={styles.sub}>Pick your mood and we'll handle the rest.</Text>
@@ -65,7 +74,29 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,
+  },
+  profileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+  },
+  profileLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  profileIcon: {
+    fontSize: 14,
+    color: colors.primary,
   },
   eyebrow: {
     ...typography.label,
