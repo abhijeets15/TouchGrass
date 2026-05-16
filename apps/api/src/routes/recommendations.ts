@@ -1,2 +1,0 @@
-// TODO: /recommendations router
-export {};

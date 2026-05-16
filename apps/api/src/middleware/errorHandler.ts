@@ -1,2 +1,0 @@
-// TODO: errorHandler middleware
-export {};

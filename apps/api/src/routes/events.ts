@@ -1,2 +1,0 @@
-// TODO: /events router
-export {};

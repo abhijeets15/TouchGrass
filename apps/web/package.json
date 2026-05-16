@@ -1,9 +1,9 @@
 {
-  "name": "@vibecheck/api",
+  "name": "@vibecheck/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node -e \"console.log('@vibecheck/api: not implemented yet — add your server entry here')\"",
+    "dev": "node -e \"console.log('@vibecheck/web: not implemented yet — add your web app here')\"",
     "lint": "echo 'no-op'",
     "typecheck": "echo 'no-op'",
     "test": "echo 'no-op'"

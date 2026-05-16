@@ -1,2 +1,0 @@
-// TODO: Profile screen
-export {};

@@ -1,2 +1,0 @@
-// TODO: /users router
-export {};

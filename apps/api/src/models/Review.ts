@@ -1,2 +1,0 @@
-// TODO: Review model
-export {};

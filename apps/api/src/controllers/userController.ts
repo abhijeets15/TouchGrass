@@ -1,2 +1,0 @@
-// TODO: userController
-export {};

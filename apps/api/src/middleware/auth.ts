@@ -1,2 +1,0 @@
-// TODO: auth middleware
-export {};

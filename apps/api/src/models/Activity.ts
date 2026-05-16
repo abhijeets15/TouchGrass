@@ -1,2 +1,0 @@
-// TODO: Activity model
-export {};

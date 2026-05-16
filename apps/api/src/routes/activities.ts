@@ -1,2 +1,0 @@
-// TODO: /activities router
-export {};

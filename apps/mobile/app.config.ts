@@ -5,26 +5,24 @@ const config: ExpoConfig = {
   slug: 'vibecheck',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './src/assets/icon.png',
   scheme: 'vibecheck',
-  userInterfaceStyle: 'automatic',
+  userInterfaceStyle: 'dark',
   splash: {
-    image: './src/assets/splash.png',
     resizeMode: 'contain',
+    backgroundColor: '#0D0D0F',
   },
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'com.vibecheck.app',
   },
   android: {
-    adaptiveIcon: {
-      foregroundImage: './src/assets/adaptive-icon.png',
-    },
     package: 'com.vibecheck.app',
+    adaptiveIcon: {
+      backgroundColor: '#0D0D0F',
+    },
   },
-  plugins: ['expo-router'],
   extra: {
-    apiUrl: process.env.API_URL,
+    // EXPO_PUBLIC_ vars are automatically inlined — no extra config needed
   },
 };
 

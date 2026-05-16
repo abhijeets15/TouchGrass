@@ -1,2 +1,0 @@
-// TODO: Itinerary model
-export {};

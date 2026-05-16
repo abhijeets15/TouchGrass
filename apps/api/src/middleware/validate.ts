@@ -1,2 +1,0 @@
-// TODO: validate middleware
-export {};

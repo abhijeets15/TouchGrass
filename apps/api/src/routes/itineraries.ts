@@ -1,2 +1,0 @@
-// TODO: /itineraries router
-export {};
