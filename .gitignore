@@ -50,5 +50,8 @@ coverage/
 # Docker volumes (local)
 infra/docker/postgres_data/
 
+# Local SQLite (auth API)
+apps/api/data/
+
 # Misc
 *.pem

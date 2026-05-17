@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from '@vibecheck/shared-types';
 import { query } from '../db';
 import { hashPassword, verifyPassword } from '../utils/password';
@@ -9,12 +10,12 @@ import {
   signAccessToken,
 } from '../utils/tokens';
 
-interface UserRow extends Record<string, unknown> {
+interface UserRow {
   id: string;
   email: string;
   display_name: string;
   password_hash: string;
-  created_at: Date;
+  created_at: string;
 }
 
 function toAuthUser(row: UserRow): AuthUser {
@@ -22,7 +23,7 @@ function toAuthUser(row: UserRow): AuthUser {
     id: row.id,
     email: row.email,
     displayName: row.display_name,
-    createdAt: row.created_at.toISOString(),
+    createdAt: row.created_at,
   };
 }
 
@@ -30,11 +31,12 @@ async function issueTokens(user: UserRow): Promise<AuthResponse> {
   const accessToken = signAccessToken({ sub: user.id, email: user.email });
   const refreshToken = createRefreshToken();
   const tokenHash = hashRefreshToken(refreshToken);
-  const expiresAt = refreshTokenExpiresAt();
+  const expiresAt = refreshTokenExpiresAt().toISOString();
+  const tokenId = crypto.randomUUID();
 
-  await query(
-    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
-    [user.id, tokenHash, expiresAt],
+  query(
+    `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)`,
+    [tokenId, user.id, tokenHash, expiresAt],
   );
 
   return {
@@ -51,21 +53,24 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
   const email = input.email.trim().toLowerCase();
   const displayName = input.displayName.trim();
   const passwordHash = await hashPassword(input.password);
+  const id = crypto.randomUUID();
 
   try {
-    const result = await query<UserRow>(
-      `INSERT INTO users (email, password_hash, display_name)
-       VALUES ($1, $2, $3)
+    const result = query<UserRow>(
+      `INSERT INTO users (id, email, password_hash, display_name)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, email, display_name, password_hash, created_at`,
-      [email, passwordHash, displayName],
+      [id, email, passwordHash, displayName],
     );
     const user = result.rows[0];
     if (!user) throw new Error('Failed to create user');
     return issueTokens(user);
   } catch (err: unknown) {
-    const pgErr = err as { code?: string };
-    if (pgErr.code === '23505') {
-      const error = new Error('An account with this email already exists') as Error & { status: number };
+    const sqliteErr = err as { code?: string };
+    if (sqliteErr.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      const error = new Error('An account with this email already exists') as Error & {
+        status: number;
+      };
       error.status = 409;
       throw error;
     }
@@ -75,7 +80,7 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
 
 export async function login(input: LoginInput): Promise<AuthResponse> {
   const email = input.email.trim().toLowerCase();
-  const result = await query<UserRow>(
+  const result = query<UserRow>(
     `SELECT id, email, display_name, password_hash, created_at FROM users WHERE email = $1`,
     [email],
   );
@@ -98,11 +103,11 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
 
 export async function refreshSession(refreshToken: string) {
   const tokenHash = hashRefreshToken(refreshToken);
-  const result = await query<UserRow & { token_id: string }>(
+  const result = query<UserRow & { token_id: string }>(
     `SELECT u.id, u.email, u.display_name, u.password_hash, u.created_at, rt.id AS token_id
      FROM refresh_tokens rt
      JOIN users u ON u.id = rt.user_id
-     WHERE rt.token_hash = $1 AND rt.expires_at > NOW()`,
+     WHERE rt.token_hash = $1 AND rt.expires_at > datetime('now')`,
     [tokenHash],
   );
   const row = result.rows[0];
@@ -112,7 +117,7 @@ export async function refreshSession(refreshToken: string) {
     throw error;
   }
 
-  await query(`DELETE FROM refresh_tokens WHERE id = $1`, [row.token_id]);
+  query(`DELETE FROM refresh_tokens WHERE id = $1`, [row.token_id]);
 
   const user: UserRow = {
     id: row.id,
@@ -125,11 +130,12 @@ export async function refreshSession(refreshToken: string) {
   const accessToken = signAccessToken({ sub: user.id, email: user.email });
   const newRefresh = createRefreshToken();
   const newHash = hashRefreshToken(newRefresh);
-  const expiresAt = refreshTokenExpiresAt();
+  const expiresAt = refreshTokenExpiresAt().toISOString();
+  const newTokenId = crypto.randomUUID();
 
-  await query(
-    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
-    [user.id, newHash, expiresAt],
+  query(
+    `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)`,
+    [newTokenId, user.id, newHash, expiresAt],
   );
 
   return {
@@ -140,7 +146,7 @@ export async function refreshSession(refreshToken: string) {
 }
 
 export async function getUserById(id: string): Promise<AuthUser | null> {
-  const result = await query<UserRow>(
+  const result = query<UserRow>(
     `SELECT id, email, display_name, password_hash, created_at FROM users WHERE id = $1`,
     [id],
   );
@@ -150,5 +156,5 @@ export async function getUserById(id: string): Promise<AuthUser | null> {
 
 export async function logout(refreshToken: string): Promise<void> {
   const tokenHash = hashRefreshToken(refreshToken);
-  await query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [tokenHash]);
+  query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [tokenHash]);
 }

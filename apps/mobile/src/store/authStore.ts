@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { AuthUser } from '@vibecheck/shared-types';
 import { ApiClientError } from '@vibecheck/api-client';
 import { authApi } from '../services/authApi';
+import { API_URL } from '../config';
 import * as authStorage from '../services/authStorage';
 
 interface AuthState {
@@ -20,18 +21,15 @@ interface AuthState {
   continueAsGuest: () => void;
   exitGuestMode: () => void;
   clearError: () => void;
-
-  isAuthenticated: () => boolean;
-  canUseApp: () => boolean;
 }
 
-async function persistSession(
+async function applySession(
   accessToken: string,
   refreshToken: string,
   user: AuthUser,
   set: (state: Partial<AuthState>) => void,
 ) {
-  await authStorage.saveTokens(accessToken, refreshToken);
+  await authStorage.saveSession(accessToken, refreshToken, user);
   set({
     user,
     accessToken,
@@ -52,49 +50,62 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   bootstrap: async () => {
     set({ isHydrating: true, error: null });
-    try {
-      const stored = await authStorage.getStoredTokens();
-      if (!stored) {
-        set({ isHydrating: false });
-        return;
-      }
 
-      try {
-        const { user } = await authApi.me(stored.accessToken);
-        set({
-          user,
-          accessToken: stored.accessToken,
-          refreshToken: stored.refreshToken,
-          isGuest: false,
-          isHydrating: false,
-        });
-        return;
-      } catch (err) {
-        if (!(err instanceof ApiClientError) || err.status !== 401) {
-          await authStorage.clearTokens();
+    const stored = await authStorage.getStoredSession();
+    if (!stored) {
+      set({ isHydrating: false });
+      return;
+    }
+
+    // Restore session immediately so UI stays signed in while we validate
+    set({
+      user: stored.user,
+      accessToken: stored.accessToken,
+      refreshToken: stored.refreshToken,
+      isGuest: false,
+    });
+
+    try {
+      const { user } = await authApi.me(stored.accessToken);
+      await authStorage.saveSession(stored.accessToken, stored.refreshToken, user);
+      set({ user, isHydrating: false });
+      return;
+    } catch (err) {
+      if (err instanceof ApiClientError && err.status === 401) {
+        try {
+          const tokens = await authApi.refresh(stored.refreshToken);
+          const { user } = await authApi.me(tokens.accessToken);
+          await applySession(tokens.accessToken, tokens.refreshToken, user, set);
+          set({ isHydrating: false });
+          return;
+        } catch (refreshErr) {
+          if (
+            refreshErr instanceof ApiClientError &&
+            refreshErr.status === 401
+          ) {
+            await authStorage.clearSession();
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              isHydrating: false,
+            });
+            return;
+          }
+          // Network error during refresh — keep cached session
           set({ isHydrating: false });
           return;
         }
       }
 
-      const tokens = await authApi.refresh(stored.refreshToken);
-      const { user } = await authApi.me(tokens.accessToken);
-      await authStorage.saveTokens(tokens.accessToken, tokens.refreshToken);
-      set({
-        user,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        isGuest: false,
-        isHydrating: false,
-      });
-    } catch {
-      await authStorage.clearTokens();
-      set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isHydrating: false,
-      });
+      if (err instanceof ApiClientError && err.status === 0) {
+        // Offline / API down — keep persisted session
+        set({ isHydrating: false });
+        return;
+      }
+
+      // Unexpected error — still keep session; user can retry later
+      set({ isHydrating: false });
     }
   },
 
@@ -102,12 +113,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isSubmitting: true, error: null });
     try {
       const { user, tokens } = await authApi.register({ email, password, displayName });
-      await persistSession(tokens.accessToken, tokens.refreshToken, user, set);
+      await applySession(tokens.accessToken, tokens.refreshToken, user, set);
       set({ isSubmitting: false });
       return true;
     } catch (err) {
-      const message =
-        err instanceof ApiClientError ? err.message : 'Could not create account. Try again.';
+      const message = formatAuthError(err);
       set({ isSubmitting: false, error: message });
       return false;
     }
@@ -117,12 +127,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isSubmitting: true, error: null });
     try {
       const { user, tokens } = await authApi.login({ email, password });
-      await persistSession(tokens.accessToken, tokens.refreshToken, user, set);
+      await applySession(tokens.accessToken, tokens.refreshToken, user, set);
       set({ isSubmitting: false });
       return true;
     } catch (err) {
-      const message =
-        err instanceof ApiClientError ? err.message : 'Could not sign in. Try again.';
+      const message = formatAuthError(err);
       set({ isSubmitting: false, error: message });
       return false;
     }
@@ -137,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Clear local session even if server logout fails
       }
     }
-    await authStorage.clearTokens();
+    await authStorage.clearSession();
     set({
       user: null,
       accessToken: null,
@@ -160,7 +169,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   exitGuestMode: () => set({ isGuest: false }),
 
   clearError: () => set({ error: null }),
-
-  isAuthenticated: () => !!get().user && !!get().accessToken,
-  canUseApp: () => get().isAuthenticated() || get().isGuest,
 }));
+
+function formatAuthError(err: unknown): string {
+  if (err instanceof ApiClientError) {
+    if (err.status === 0) {
+      return `Cannot reach the API at ${API_URL}. On your computer, run "npm run api" from the project root.`;
+    }
+    return err.message;
+  }
+  return 'Something went wrong. Please try again.';
+}
+
+/** Use these selectors so screens re-render when auth state changes. */
+export const selectIsHydrating = (s: AuthState) => s.isHydrating;
+export const selectIsAuthenticated = (s: AuthState) => !!s.user && !!s.accessToken;
+export const selectIsGuest = (s: AuthState) => s.isGuest;
+export const selectCanUseApp = (s: AuthState) =>
+  (!!s.user && !!s.accessToken) || s.isGuest;

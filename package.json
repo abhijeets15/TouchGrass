@@ -8,11 +8,12 @@
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace=@vibecheck/mobile",
+    "mobile": "npm run start --workspace=@vibecheck/mobile -- --clear",
     "web": "npm run dev --workspace=@vibecheck/web",
     "api": "npm run dev --workspace=@vibecheck/api",
     "api:migrate": "npm run migrate --workspace=@vibecheck/api",
     "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "dev:api": "npm run api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"

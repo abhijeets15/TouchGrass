@@ -36,16 +36,25 @@ async function request<T>(
   const { accessToken, headers: extraHeaders, ...init } = options;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
     ...(extraHeaders as Record<string, string>),
   };
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const res = await fetch(`${baseUrl.replace(/\/$/, '')}${path}`, {
-    ...init,
-    headers,
-  });
+  const url = `${baseUrl.replace(/\/$/, '')}${path}`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch {
+    throw new ApiClientError(
+      `Cannot reach the server at ${baseUrl}. Start the API with "npm run api" and ensure Docker/Postgres is running.`,
+      0,
+      'NETWORK_ERROR',
+    );
+  }
 
   const body = await parseJson<T | ApiErrorBody>(res);
   if (!res.ok) {
@@ -91,6 +100,10 @@ export function createAuthClient(baseUrl: string) {
         body: JSON.stringify({ refreshToken }),
         accessToken,
       });
+    },
+
+    health() {
+      return request<{ ok: boolean }>(baseUrl, '/health', { method: 'GET' });
     },
   };
 }

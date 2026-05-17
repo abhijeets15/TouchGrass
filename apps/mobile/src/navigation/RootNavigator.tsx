@@ -2,10 +2,16 @@ import React, { useEffect } from 'react';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 import { BootstrapScreen } from '../screens/BootstrapScreen';
-import { useAuthStore } from '../store/authStore';
+import {
+  useAuthStore,
+  selectCanUseApp,
+  selectIsHydrating,
+} from '../store/authStore';
 
 export function RootNavigator() {
-  const { isHydrating, canUseApp, bootstrap } = useAuthStore();
+  const isHydrating = useAuthStore(selectIsHydrating);
+  const canUseApp = useAuthStore(selectCanUseApp);
+  const bootstrap = useAuthStore((s) => s.bootstrap);
 
   useEffect(() => {
     bootstrap();
@@ -15,7 +21,7 @@ export function RootNavigator() {
     return <BootstrapScreen />;
   }
 
-  if (!canUseApp()) {
+  if (!canUseApp) {
     return <AuthNavigator />;
   }
 

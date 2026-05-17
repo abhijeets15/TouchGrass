@@ -1,25 +1,25 @@
 import { createApp } from './app';
 import { config } from './config';
-import { pool } from './db';
+import { closeDb } from './db';
 import runMigrations from './migrate-runner';
 
-async function ensureMigrations() {
-  await runMigrations();
-}
-
-async function main() {
-  await ensureMigrations();
+function main() {
+  runMigrations();
 
   const app = createApp();
-  app.listen(config.port, () => {
+  app.listen(config.port, '0.0.0.0', () => {
     console.log(`Vibecheck API listening on http://localhost:${config.port}`);
+    console.log(`  Database: ${config.databasePath}`);
+    console.log(`  (Android emulator → http://10.0.2.2:${config.port})`);
   });
 }
 
-main().catch((err) => {
+try {
+  main();
+} catch (err) {
   console.error('Failed to start API:', err);
   process.exit(1);
-});
+}
 
-process.on('SIGTERM', () => pool.end());
-process.on('SIGINT', () => pool.end());
+process.on('SIGTERM', () => closeDb());
+process.on('SIGINT', () => closeDb());
