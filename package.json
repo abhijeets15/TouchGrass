@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "mobile": "npm run start --workspace=@vibecheck/mobile -- --clear",
+    "mobile:device": "bash scripts/start-expo-lan.sh",
+    "mobile:tunnel": "npm run start --workspace=@vibecheck/mobile -- --clear --tunnel",
     "web": "npm run dev --workspace=@vibecheck/web",
     "api": "npm run dev --workspace=@vibecheck/api",
     "api:migrate": "npm run migrate --workspace=@vibecheck/api",

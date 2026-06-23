@@ -22,4 +22,5 @@ module.exports = {
     },
   },
   extra: {},
+  plugins: ['expo-asset', 'expo-font'],
 };

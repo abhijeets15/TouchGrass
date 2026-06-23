@@ -172,7 +172,7 @@ Defaults work out of the box (SQLite path, dev JWT secrets). Optional: `PORT`, `
 
 | Area | Stack |
 |------|--------|
-| Mobile | Expo 52, React Native 0.76, TypeScript (strict) |
+| Mobile | Expo 54, React Native 0.81, React 19, TypeScript (strict) |
 | Navigation | React Navigation (native stack) |
 | State | Zustand (`authStore`, `vibeStore`) |
 | Session storage | `expo-secure-store` (tokens + user profile) |
@@ -188,7 +188,9 @@ From the **repo root**:
 | Command | Description |
 |---------|-------------|
 | `npm run api` | Start auth API on port **3001** |
-| `npm run mobile` | Start Expo (with cache clear) |
+| `npm run mobile` | Start Expo (emulator / default) |
+| `npm run mobile:device` | Start Expo with your Mac's Wi‑Fi IP (physical phone) |
+| `npm run mobile:tunnel` | Start Expo via tunnel (physical phone, any network) |
 | `npm run typecheck` | Typecheck all workspaces |
 | `npm run lint` | Lint all workspaces |
 | `npm run test` | Test all workspaces |
@@ -206,6 +208,39 @@ From **`apps/mobile`**:
 ---
 
 ## Troubleshooting
+
+### QR code / physical phone won't connect
+
+**Your Mac's Wi‑Fi IP may be `10.0.0.2`** (common on Xfinity / some routers). That is valid — your phone must be on the same `10.0.0.x` Wi‑Fi, not cellular or a guest network.
+
+**Scan with Expo Go**, not the iPhone Camera app (`exp://` URLs show "no usable data found" in Camera).
+
+**Option A — LAN (same Wi‑Fi):**
+
+```bash
+npm run mobile:device
+```
+
+QR should show `exp://<your-mac-ip>:8081`. If you have multiple IPs, override:
+
+```bash
+MOBILE_LAN_IP=192.168.1.5 npm run mobile:device
+```
+
+Find your IP: **System Settings → Wi‑Fi → Details → IP Address**
+
+**Option B — Tunnel (if LAN is blocked):**
+
+```bash
+npm install          # installs @expo/ngrok locally (no global install)
+npm run mobile:tunnel
+```
+
+When Expo asks to install ngrok globally, choose **No** — the project includes it locally.
+
+**macOS Firewall:** If the phone can't connect, allow **Node** or **Terminal** in System Settings → Network → Firewall.
+
+Phone and Mac must be on the **same Wi‑Fi** (not guest network).
 
 ### `EADDRINUSE` on port 3001
 
