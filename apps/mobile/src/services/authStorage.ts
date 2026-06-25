@@ -4,6 +4,7 @@ import type { AuthUser } from '@vibecheck/shared-types';
 const ACCESS_KEY = 'vibecheck_access_token';
 const REFRESH_KEY = 'vibecheck_refresh_token';
 const USER_KEY = 'vibecheck_user';
+const LAST_EMAIL_KEY = 'vibecheck_last_email';
 
 export interface StoredSession {
   accessToken: string;
@@ -52,4 +53,12 @@ export async function clearSession(): Promise<void> {
     SecureStore.deleteItemAsync(REFRESH_KEY),
     SecureStore.deleteItemAsync(USER_KEY),
   ]);
+}
+
+export async function saveLastEmail(email: string): Promise<void> {
+  await SecureStore.setItemAsync(LAST_EMAIL_KEY, email.trim().toLowerCase());
+}
+
+export async function getLastEmail(): Promise<string | null> {
+  return SecureStore.getItemAsync(LAST_EMAIL_KEY);
 }

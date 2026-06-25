@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuthStore } from '../store/authStore';
+import * as authStorage from '../services/authStorage';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
@@ -12,23 +13,50 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 export function WelcomeScreen() {
   const navigation = useNavigation<Nav>();
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
+  const [lastEmail, setLastEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    authStorage.getLastEmail().then(setLastEmail);
+  }, []);
+
+  const hasReturningUser = !!lastEmail;
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.content}>
-        <Text style={styles.eyebrow}>VIBECHECK</Text>
-        <Text style={styles.heading}>Figure out{'\n'}what to do.</Text>
-        <Text style={styles.sub}>
-          Discover plans based on your vibe, budget, and who you're with — no planning headache.
-        </Text>
+        <View>
+          <Text style={styles.eyebrow}>VIBECHECK</Text>
+          <Text style={styles.heading}>Figure out{'\n'}what to do.</Text>
+          <Text style={styles.sub}>
+            Discover plans based on your vibe, budget, and who you're with — no planning headache.
+          </Text>
+          {hasReturningUser ? (
+            <Text style={styles.returning}>
+              Welcome back — sign in to continue as {lastEmail}
+            </Text>
+          ) : null}
+        </View>
 
         <View style={styles.actions}>
-          <PrimaryButton label="Create account" onPress={() => navigation.navigate('SignUp')} />
-          <PrimaryButton
-            label="Sign in"
-            variant="outline"
-            onPress={() => navigation.navigate('SignIn')}
-          />
+          {hasReturningUser ? (
+            <>
+              <PrimaryButton label="Sign in" onPress={() => navigation.navigate('SignIn')} />
+              <PrimaryButton
+                label="Create account"
+                variant="outline"
+                onPress={() => navigation.navigate('SignUp')}
+              />
+            </>
+          ) : (
+            <>
+              <PrimaryButton label="Create account" onPress={() => navigation.navigate('SignUp')} />
+              <PrimaryButton
+                label="Sign in"
+                variant="outline"
+                onPress={() => navigation.navigate('SignIn')}
+              />
+            </>
+          )}
           <PrimaryButton
             label="Continue without account"
             variant="outline"
@@ -66,6 +94,12 @@ const styles = StyleSheet.create({
     ...typography.bodyLg,
     color: colors.textMuted,
     lineHeight: 24,
+  },
+  returning: {
+    ...typography.bodyMd,
+    color: colors.textSecondary,
+    marginTop: spacing.lg,
+    lineHeight: 20,
   },
   actions: {
     gap: 0,

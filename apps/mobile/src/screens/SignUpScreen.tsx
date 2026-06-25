@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  View,
   Text,
   StyleSheet,
   SafeAreaView,
@@ -16,6 +15,14 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { TextField } from '../components/TextField';
 import { useAuthStore } from '../store/authStore';
 import type { AuthStackParamList } from '../navigation/types';
+import {
+  normalizeEmail,
+  validateConfirmPassword,
+  validateDisplayName,
+  validateEmail,
+  validatePassword,
+  passwordStrengthHint,
+} from '../utils/authValidation';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 
@@ -25,13 +32,28 @@ export function SignUpScreen() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const valid = displayName.trim().length >= 2 && email.trim() && password.length >= 8;
+  const fieldErrors = useMemo(
+    () => ({
+      displayName: validateDisplayName(displayName),
+      email: validateEmail(email),
+      password: validatePassword(password),
+      confirmPassword: validateConfirmPassword(password, confirmPassword),
+    }),
+    [displayName, email, password, confirmPassword],
+  );
+
+  const valid = Object.values(fieldErrors).every((e) => e === null);
+
+  const markTouched = (field: string) => setTouched((t) => ({ ...t, [field]: true }));
 
   const handleSubmit = async () => {
     clearError();
+    setTouched({ displayName: true, email: true, password: true, confirmPassword: true });
     if (!valid) return;
-    await signUp(email.trim(), password, displayName.trim());
+    await signUp(normalizeEmail(email), password, displayName.trim());
   };
 
   return (
@@ -50,40 +72,64 @@ export function SignUpScreen() {
           </Pressable>
 
           <Text style={styles.heading}>Create account</Text>
-          <Text style={styles.sub}>Join Vibecheck to save itineraries and pick up where you left off.</Text>
+          <Text style={styles.sub}>
+            Save itineraries and pick up where you left off — takes about 30 seconds.
+          </Text>
 
           <TextField
             label="Display name"
             value={displayName}
             onChangeText={setDisplayName}
+            onBlur={() => markTouched('displayName')}
             autoComplete="name"
             textContentType="name"
+            returnKeyType="next"
+            error={touched.displayName ? fieldErrors.displayName ?? undefined : undefined}
           />
           <TextField
             label="Email"
             value={email}
             onChangeText={setEmail}
+            onBlur={() => markTouched('email')}
             autoCapitalize="none"
+            autoCorrect={false}
             keyboardType="email-address"
             autoComplete="email"
             textContentType="emailAddress"
+            returnKeyType="next"
+            error={touched.email ? fieldErrors.email ?? undefined : undefined}
           />
           <TextField
             label="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            onBlur={() => markTouched('password')}
+            allowPasswordToggle
             autoComplete="new-password"
             textContentType="newPassword"
+            returnKeyType="next"
+            error={touched.password ? fieldErrors.password ?? undefined : undefined}
+            hint={!touched.password || fieldErrors.password ? passwordStrengthHint(password) : undefined}
           />
-          <Text style={styles.hint}>At least 8 characters</Text>
+          <TextField
+            label="Confirm password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            onBlur={() => markTouched('confirmPassword')}
+            allowPasswordToggle
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+            error={touched.confirmPassword ? fieldErrors.confirmPassword ?? undefined : undefined}
+          />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <PrimaryButton
             label={isSubmitting ? 'Creating account…' : 'Create account'}
             onPress={handleSubmit}
-            disabled={isSubmitting || !valid}
+            disabled={isSubmitting}
           />
 
           <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.linkWrap}>
@@ -118,14 +164,9 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     color: colors.textMuted,
     marginBottom: spacing.xl,
+    lineHeight: 20,
   },
-  hint: {
-    ...typography.bodySm,
-    color: colors.textDim,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.md,
-  },
-  error: {
+  formError: {
     ...typography.bodySm,
     color: colors.error,
     marginBottom: spacing.md,
