@@ -30,6 +30,7 @@ async function applySession(
   set: (state: Partial<AuthState>) => void,
 ) {
   await authStorage.saveSession(accessToken, refreshToken, user);
+  await authStorage.saveLastEmail(user.email);
   set({
     user,
     accessToken,
