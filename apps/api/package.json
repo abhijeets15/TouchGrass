@@ -13,6 +13,7 @@
     "test": "echo 'no-op'"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@vibecheck/shared-types": "*",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.7.0",

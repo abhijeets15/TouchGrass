@@ -13,4 +13,5 @@ export const config = {
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL ?? '15m',
   refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
+  geminiApiKey: process.env.GEMINI_API_KEY ?? '',
 };

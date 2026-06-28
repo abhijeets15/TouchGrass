@@ -116,6 +116,32 @@ export function createAuthClient(baseUrl: string) {
       });
     },
 
+    generateItinerary(params: {
+      vibe: string;
+      budget: string;
+      time: string;
+      group: string;
+      distance: string;
+      destination?: string;
+    }) {
+      return request<{
+        title: string;
+        duration: string;
+        estimatedCost: string;
+        closingNote: string;
+        stops: Array<{
+          name: string;
+          type: string;
+          duration: string;
+          note: string;
+          priceTier: string;
+        }>;
+      }>(baseUrl, '/itinerary/generate', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
     health() {
       return request<{ ok: boolean }>(baseUrl, '/health', { method: 'GET' });
     },

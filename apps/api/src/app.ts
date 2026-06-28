@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';
+import itineraryRoutes from './routes/itinerary';
 import { config } from './config';
 
 export function createApp() {
@@ -19,6 +20,7 @@ export function createApp() {
   });
 
   app.use('/auth', authRoutes);
+  app.use('/itinerary', itineraryRoutes);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });
