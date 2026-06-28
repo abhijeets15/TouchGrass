@@ -20,6 +20,15 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 function handleError(res: import('express').Response, err: unknown) {
   const e = err as Error & { status?: number };
   const status = e.status ?? 500;
@@ -94,6 +103,35 @@ router.post('/logout', requireAuth, async (req: AuthedRequest, res) => {
   try {
     await authService.logout(parsed.data.refreshToken);
     res.json({ ok: true });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.errors[0]?.message ?? 'Invalid email' });
+    return;
+  }
+  try {
+    await authService.requestPasswordReset(parsed.data.email);
+    // Always return success for security (don't reveal if email exists)
+    res.json({ ok: true, message: 'If an account exists with this email, a password reset token has been generated' });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.errors[0]?.message ?? 'Invalid input' });
+    return;
+  }
+  try {
+    await authService.resetPassword(parsed.data.token, parsed.data.password);
+    res.json({ ok: true, message: 'Password has been reset successfully' });
   } catch (err) {
     handleError(res, err);
   }

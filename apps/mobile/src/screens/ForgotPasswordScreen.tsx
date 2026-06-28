@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Text,
   StyleSheet,
@@ -13,37 +13,69 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, typography } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { TextField } from '../components/TextField';
-import { useAuthStore } from '../store/authStore';
-import * as authStorage from '../services/authStorage';
-import type { AuthStackParamList } from '../navigation/types';
+import { authApi } from '../services/authApi';
 import { normalizeEmail, validateEmail } from '../utils/authValidation';
+import type { AuthStackParamList } from '../navigation/types';
 
-type Nav = NativeStackNavigationProp<AuthStackParamList, 'SignIn'>;
+type Nav = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
-export function SignInScreen() {
+export function ForgotPasswordScreen() {
   const navigation = useNavigation<Nav>();
-  const { signIn, isSubmitting, error, clearError } = useAuthStore();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [loadedEmail, setLoadedEmail] = useState(false);
-
-  useEffect(() => {
-    authStorage.getLastEmail().then((saved) => {
-      if (saved) setEmail(saved);
-      setLoadedEmail(true);
-    });
-  }, []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const emailError = useMemo(() => validateEmail(email), [email]);
-  const canSubmit = !emailError && password.length > 0;
+  const canSubmit = !emailError && email.length > 0;
 
   const handleSubmit = async () => {
-    clearError();
-    setTouched({ email: true, password: true });
+    setError(null);
+    setTouched({ email: true });
     if (!canSubmit) return;
-    await signIn(normalizeEmail(email), password);
+
+    setIsSubmitting(true);
+    try {
+      await authApi.forgotPassword(normalizeEmail(email));
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (success) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Pressable onPress={() => navigation.goBack()}>
+              <Text style={styles.back}>← Back</Text>
+            </Pressable>
+
+            <Text style={styles.heading}>Check your server logs</Text>
+            <Text style={styles.sub}>
+              A password reset token has been generated for {email}. Check your API server console to get the reset token.
+            </Text>
+
+            <PrimaryButton
+              label="Enter Reset Token"
+              onPress={() => navigation.navigate('ResetPassword', { email })}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -60,11 +92,9 @@ export function SignInScreen() {
             <Text style={styles.back}>← Back</Text>
           </Pressable>
 
-          <Text style={styles.heading}>Welcome back</Text>
+          <Text style={styles.heading}>Forgot password?</Text>
           <Text style={styles.sub}>
-            {loadedEmail && email
-              ? `Signing in as ${email}`
-              : 'Sign in to access your saved plans.'}
+            Enter your email address and we'll generate a reset token for you.
           </Text>
 
           <TextField
@@ -77,37 +107,18 @@ export function SignInScreen() {
             keyboardType="email-address"
             autoComplete="email"
             textContentType="username"
-            returnKeyType="next"
-            error={touched.email ? emailError ?? undefined : undefined}
-          />
-          <TextField
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            allowPasswordToggle
-            autoComplete="password"
-            textContentType="password"
             returnKeyType="done"
             onSubmitEditing={handleSubmit}
+            error={touched.email ? emailError ?? undefined : undefined}
           />
-
-          <Pressable onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotPasswordWrap}>
-            <Text style={styles.forgotPassword}>Forgot password?</Text>
-          </Pressable>
 
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <PrimaryButton
-            label={isSubmitting ? 'Signing in…' : 'Sign in'}
+            label={isSubmitting ? 'Sending...' : 'Send Reset Token'}
             onPress={handleSubmit}
             disabled={isSubmitting}
           />
-
-          <Pressable onPress={() => navigation.navigate('SignUp')} style={styles.linkWrap}>
-            <Text style={styles.link}>
-              New here? <Text style={styles.linkAccent}>Create an account</Text>
-            </Text>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -141,26 +152,5 @@ const styles = StyleSheet.create({
     ...typography.bodySm,
     color: colors.error,
     marginBottom: spacing.md,
-  },
-  forgotPasswordWrap: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.md,
-  },
-  forgotPassword: {
-    ...typography.bodySm,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  linkWrap: {
-    marginTop: spacing.lg,
-    alignItems: 'center',
-  },
-  link: {
-    ...typography.bodyMd,
-    color: colors.textMuted,
-  },
-  linkAccent: {
-    color: colors.primary,
-    fontWeight: '600',
   },
 });

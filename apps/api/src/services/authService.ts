@@ -16,6 +16,7 @@ interface UserRow {
   display_name: string;
   password_hash: string;
   created_at: string;
+  [key: string]: unknown;
 }
 
 function toAuthUser(row: UserRow): AuthUser {
@@ -157,4 +158,68 @@ export async function getUserById(id: string): Promise<AuthUser | null> {
 export async function logout(refreshToken: string): Promise<void> {
   const tokenHash = hashRefreshToken(refreshToken);
   query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [tokenHash]);
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const emailLower = email.trim().toLowerCase();
+  const result = query<UserRow>(
+    `SELECT id, email FROM users WHERE email = $1`,
+    [emailLower],
+  );
+  const user = result.rows[0];
+  
+  if (!user) {
+    // Don't reveal if email exists for security
+    return;
+  }
+
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+  const tokenId = crypto.randomUUID();
+
+  // Delete any existing reset tokens for this user
+  query(`DELETE FROM password_reset_tokens WHERE user_id = $1`, [user.id]);
+
+  // Store new reset token
+  query(
+    `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)`,
+    [tokenId, user.id, tokenHash, expiresAt],
+  );
+
+  // Log the reset token to console (no-cost solution)
+  // In production, replace this with email sending
+  console.log('=== PASSWORD RESET TOKEN ===');
+  console.log(`Email: ${user.email}`);
+  console.log(`Reset Token: ${resetToken}`);
+  console.log(`Expires: ${expiresAt}`);
+  console.log('============================');
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  
+  const result = query<{ user_id: string }>(
+    `SELECT user_id FROM password_reset_tokens 
+     WHERE token_hash = $1 AND expires_at > datetime('now')`,
+    [tokenHash],
+  );
+  
+  const resetToken = result.rows[0];
+  if (!resetToken) {
+    const error = new Error('Invalid or expired reset token') as Error & { status: number };
+    error.status = 401;
+    throw error;
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  
+  query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, resetToken.user_id]);
+  
+  // Delete the used reset token
+  query(`DELETE FROM password_reset_tokens WHERE token_hash = $1`, [tokenHash]);
+  
+  // Invalidate all refresh tokens for this user
+  query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [resetToken.user_id]);
 }
