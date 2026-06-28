@@ -5,6 +5,8 @@ import { FiltersScreen } from '../screens/FiltersScreen';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { ItineraryScreen } from '../screens/ItineraryScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { OnboardingInterestsScreen } from '../screens/OnboardingInterestsScreen';
+import { OnboardingPersonalityScreen } from '../screens/OnboardingPersonalityScreen';
 import type { MainStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();

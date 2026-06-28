@@ -12,4 +12,6 @@ export type MainStackParamList = {
   Loading: undefined;
   Itinerary: undefined;
   Profile: undefined;
+  OnboardingInterests: undefined;
+  OnboardingPersonality: undefined;
 };
