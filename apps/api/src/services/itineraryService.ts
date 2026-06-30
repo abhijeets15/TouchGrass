@@ -86,7 +86,7 @@ const ItineraryResponseSchema: Schema = {
   required: ['title', 'duration', 'estimatedCost', 'closingNote', 'stops'],
 };
 
-export async function generateItinerary(params: ItineraryRequest): Promise<Itinerary> {
+export async function generateItineraries(params: ItineraryRequest): Promise<Itinerary[]> {
   console.log('API Key configured:', config.geminiApiKey ? 'YES' : 'NO');
   
   if (!config.geminiApiKey) {
@@ -95,7 +95,7 @@ export async function generateItinerary(params: ItineraryRequest): Promise<Itine
 
   const destination = params.destination || 'your city';
   
-  const prompt = `Generate a detailed itinerary for a night out in ${destination}.
+  const prompt = `Generate 5 different detailed itineraries for a night out in ${destination}.
 
 Parameters:
 - Vibe: ${VIBE_LABEL[params.vibe] || params.vibe}
@@ -105,38 +105,42 @@ Parameters:
 - Distance preference: ${params.distance}
 
 Requirements:
-- Generate 3-5 stops appropriate for the duration
+- Each itinerary should be unique and different from the others
+- Generate 3-5 stops appropriate for the duration for each itinerary
 - Make it realistic for the specified location
 - Match the vibe and budget constraints
 - Include a mix of activities (dining, entertainment, etc.)
-- Be specific with venue names when possible`;
+- Be specific with venue names when possible
+- Vary the neighborhoods and types of venues across the 5 itineraries`;
 
   try {
-    console.log('Calling Gemini API...');
+    console.log('Calling Gemini API for 5 itineraries...');
     
-    // 3. Request structured JSON using the correct SDK syntax
-    const result = await genAI.models.generateContent({
+    // Generate 5 itineraries in parallel
+    const itineraryPromises = Array.from({ length: 5 }, async (_, i) => {
+      const result = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: prompt,
+        contents: `${prompt}\n\nThis is itinerary #${i + 1} of 5. Make this one unique and different from the others.`,
         config: {
           responseMimeType: 'application/json',
           responseSchema: ItineraryResponseSchema,
         }
+      });
+
+      const responseText = result.text;
+      if (!responseText) {
+        throw new Error('Empty response received from Gemini API');
+      }
+
+      return JSON.parse(responseText) as Itinerary;
     });
 
-    const responseText = result.text;
-    if (!responseText) {
-      throw new Error('Empty response received from Gemini API');
-    }
-
-    console.log('Gemini response received:', responseText.substring(0, 200));
-    
-    // 4. Directly parse the verified response structure
-    const itinerary = JSON.parse(responseText) as Itinerary;
-    return itinerary;
+    const itineraries = await Promise.all(itineraryPromises);
+    console.log('Generated 5 itineraries successfully');
+    return itineraries;
 
   } catch (error) {
     console.error('AI generation error:', error);
-    throw new Error('Failed to generate itinerary. Please try again.');
+    throw new Error('Failed to generate itineraries. Please try again.');
   }
 }

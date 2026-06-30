@@ -30,10 +30,10 @@ router.post('/generate', async (req, res) => {
     return;
   }
   try {
-    console.log('Calling generateItinerary with:', parsed.data);
-    const itinerary = await itineraryService.generateItinerary(parsed.data);
-    console.log('Itinerary generated successfully');
-    res.json(itinerary);
+    console.log('Calling generateItineraries with:', parsed.data);
+    const itineraries = await itineraryService.generateItineraries(parsed.data);
+    console.log('Itineraries generated successfully');
+    res.json(itineraries);
   } catch (err) {
     console.error('Error in generate route:', err);
     handleError(res, err);

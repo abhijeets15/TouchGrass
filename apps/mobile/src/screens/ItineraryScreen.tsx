@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,13 +34,11 @@ const BUDGET_LABEL: Record<string, string> = {
 
 export function ItineraryScreen() {
   const navigation = useNavigation<Nav>();
-  const { itinerary, error, vibe, group, budget, reset } = useVibeStore();
+  const { selectedItinerary, error, vibe, group, budget, reset } = useVibeStore();
   const { buildItinerary } = useItinerary();
 
   const handleRegenerate = async () => {
-    navigation.navigate('Loading');
-    await buildItinerary();
-    navigation.navigate('Itinerary');
+    navigation.navigate('ItinerarySelection');
   };
 
   const handleRestart = () => {
@@ -62,7 +61,7 @@ export function ItineraryScreen() {
     );
   }
 
-  if (!itinerary) {
+  if (!selectedItinerary) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.errorContainer}>
@@ -78,14 +77,17 @@ export function ItineraryScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </Pressable>
           <View style={styles.vibeTag}>
             <Text style={styles.vibeTagText}>
               {vibe ? vibe.charAt(0).toUpperCase() + vibe.slice(1) : ''} night
             </Text>
           </View>
-          <Text style={styles.title}>{itinerary.title}</Text>
+          <Text style={styles.title}>{selectedItinerary.title}</Text>
           <View style={styles.meta}>
-            <Text style={styles.metaItem}>⏱ {itinerary.duration}</Text>
+            <Text style={styles.metaItem}>⏱ {selectedItinerary.duration}</Text>
             <Text style={styles.metaItem}>
               {group ? GROUP_EMOJI[group] : '👥'} {group ? group.charAt(0).toUpperCase() + group.slice(1) : ''}
             </Text>
@@ -97,19 +99,19 @@ export function ItineraryScreen() {
 
         {/* Stops */}
         <View style={styles.body}>
-          {itinerary.stops.map((stop: ItineraryStop, i: number) => (
+          {selectedItinerary.stops.map((stop: ItineraryStop, i: number) => (
             <React.Fragment key={`${stop.name}-${i}`}>
               {i > 0 && (
                 <View style={styles.connector}>
                   <Text style={styles.connectorText}>↓  ~10 min walk</Text>
                 </View>
               )}
-              <StopCard stop={stop} index={i} total={itinerary.stops.length} />
+              <StopCard stop={stop} index={i} total={selectedItinerary.stops.length} />
             </React.Fragment>
           ))}
 
-          {itinerary.closingNote && (
-            <Text style={styles.closingNote}>{itinerary.closingNote}</Text>
+          {selectedItinerary.closingNote && (
+            <Text style={styles.closingNote}>{selectedItinerary.closingNote}</Text>
           )}
         </View>
 
@@ -117,7 +119,7 @@ export function ItineraryScreen() {
         <View style={styles.footer}>
           <View style={styles.costRow}>
             <Text style={styles.costLabel}>Estimated total</Text>
-            <Text style={styles.costValue}>{itinerary.estimatedCost}</Text>
+            <Text style={styles.costValue}>{selectedItinerary.estimatedCost}</Text>
           </View>
           <PrimaryButton label="Regenerate plan" onPress={handleRegenerate} />
           <PrimaryButton label="Start over" onPress={handleRestart} variant="outline" />
@@ -220,6 +222,14 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     borderBottomWidth: 1,
     borderBottomColor: '#1a1a1f',
+  },
+  backButton: {
+    marginBottom: spacing.md,
+  },
+  backText: {
+    ...typography.bodyMd,
+    color: colors.primary,
+    fontWeight: '600',
   },
   vibeTag: {
     alignSelf: 'flex-start',

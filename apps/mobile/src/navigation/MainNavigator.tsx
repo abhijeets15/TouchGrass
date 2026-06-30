@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { VibePickerScreen } from '../screens/VibePickerScreen';
 import { FiltersScreen } from '../screens/FiltersScreen';
 import { LoadingScreen } from '../screens/LoadingScreen';
+import { ItinerarySelectionScreen } from '../screens/ItinerarySelectionScreen';
 import { ItineraryScreen } from '../screens/ItineraryScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { OnboardingInterestsScreen } from '../screens/OnboardingInterestsScreen';
@@ -27,6 +28,7 @@ export function MainNavigator() {
         component={LoadingScreen}
         options={{ animation: 'fade', gestureEnabled: false }}
       />
+      <Stack.Screen name="ItinerarySelection" component={ItinerarySelectionScreen} />
       <Stack.Screen name="Itinerary" component={ItineraryScreen} />
       <Stack.Screen
         name="Profile"

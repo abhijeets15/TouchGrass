@@ -124,7 +124,7 @@ export function createAuthClient(baseUrl: string) {
       distance: string;
       destination?: string;
     }) {
-      return request<{
+      return request<Array<{
         title: string;
         duration: string;
         estimatedCost: string;
@@ -136,7 +136,7 @@ export function createAuthClient(baseUrl: string) {
           note: string;
           priceTier: string;
         }>;
-      }>(baseUrl, '/itinerary/generate', {
+      }>>(baseUrl, '/itinerary/generate', {
         method: 'POST',
         body: JSON.stringify(params),
       });

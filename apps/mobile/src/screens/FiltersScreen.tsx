@@ -31,7 +31,7 @@ export function FiltersScreen() {
   const handleBuild = async () => {
     navigation.navigate('Loading');
     await buildItinerary();
-    navigation.navigate('Itinerary');
+    navigation.navigate('ItinerarySelection');
   };
 
   return (

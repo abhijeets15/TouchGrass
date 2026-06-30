@@ -10,6 +10,7 @@ export type MainStackParamList = {
   VibePicker: undefined;
   Filters: undefined;
   Loading: undefined;
+  ItinerarySelection: undefined;
   Itinerary: undefined;
   Profile: undefined;
   OnboardingInterests: undefined;

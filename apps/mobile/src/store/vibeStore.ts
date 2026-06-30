@@ -11,7 +11,8 @@ interface VibeState {
   distance: DistanceId | null;
 
   // Result
-  itinerary: Itinerary | null;
+  itineraries: Itinerary[];
+  selectedItinerary: Itinerary | null;
   isLoading: boolean;
   error: string | null;
 
@@ -21,7 +22,8 @@ interface VibeState {
   setTime: (time: TimeId) => void;
   setGroup: (group: GroupId) => void;
   setDistance: (distance: DistanceId) => void;
-  setItinerary: (itinerary: Itinerary) => void;
+  setItineraries: (itineraries: Itinerary[]) => void;
+  setSelectedItinerary: (itinerary: Itinerary) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
@@ -36,7 +38,8 @@ const initialState = {
   time: null,
   group: null,
   distance: null,
-  itinerary: null,
+  itineraries: [],
+  selectedItinerary: null,
   isLoading: false,
   error: null,
 };
@@ -49,7 +52,8 @@ export const useVibeStore = create<VibeState>((set, get) => ({
   setTime: (time) => set({ time }),
   setGroup: (group) => set({ group }),
   setDistance: (distance) => set({ distance }),
-  setItinerary: (itinerary) => set({ itinerary, error: null }),
+  setItineraries: (itineraries) => set({ itineraries, error: null }),
+  setSelectedItinerary: (selectedItinerary) => set({ selectedItinerary }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
   reset: () => set(initialState),
